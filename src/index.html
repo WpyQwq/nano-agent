@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nano Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="titlebar">
+      <div class="titlebar-left">
+        <button class="window-toggle chrome-icon" title="Toggle sidebar"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9 5v14"/></svg></button>
+        <span class="titlebar-divider"></span>
+        <button class="chrome-icon" title="Back">‹</button>
+        <button class="chrome-icon muted" title="Forward">›</button>
+        <button class="menu-button">File</button>
+        <button class="menu-button">Edit</button>
+        <button class="menu-button">View</button>
+        <button class="menu-button">Help</button>
+      </div>
+      <div class="titlebar-right">
+        <span class="live-dot"></span><span class="workspace-label">Nano Agent</span>
+        <button class="window-control" data-window-control="minimize">─</button>
+        <button class="window-control" data-window-control="maximize">□</button>
+        <button class="window-control close" data-window-control="close">✕</button>
+      </div>
+    </header>
+
+    <div class="app-grid">
+      <aside class="sidebar" id="sidebar">
+        <nav class="primary-nav">
+          <button class="nav-item active" data-view="task"><span class="nav-glyph"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>New task</span></button>
+          <button class="nav-item" data-view="search"><span class="nav-glyph"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="5.8"/><path d="m15.2 15.2 4.1 4.1"/></svg></span><span>Search</span></button>
+          <button class="nav-item" data-view="computer"><span class="nav-glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="m9.5 12 1.7 1.7 3.5-3.7"/></svg></span><span>Plugins</span></button>
+          <button class="nav-item" data-view="project"><span class="nav-glyph"><svg viewBox="0 0 24 24"><path d="M4 7.5h6l1.8 2H20v8.2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 7.5v-1a2 2 0 0 1 2-2h3l1.8 2"/></svg></span><span>Project</span></button>
+        </nav>
+
+        <div class="section-heading">Tasks</div>
+        <div class="task-list" id="taskList"></div>
+
+        <div class="sidebar-grow"></div>
+        <button class="nav-item settings-button" data-view="settings"><span class="nav-glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.2a7.7 7.7 0 0 0 0-2.4l1.5-1.2-1.5-2.6-1.8.7a7.3 7.3 0 0 0-2-1.2L15 4.5h-3l-.3 2a7.3 7.3 0 0 0-2 1.2l-1.8-.7-1.5 2.6L8 10.8a7.7 7.7 0 0 0 0 2.4l-1.5 1.2L8 17l1.8-.7a7.3 7.3 0 0 0 2 1.2l.3 2h3l.3-2a7.3 7.3 0 0 0 2-1.2l1.8.7 1.5-2.6Z"/></svg></span><span>Settings</span><span class="key-hint">⌘,</span></button>
+        <div class="sidebar-bottom"><span><span class="live-dot"></span><span id="providerLabel">演示模式</span></span><button class="help-button">?</button></div>
+      </aside>
+
+      <main class="main-panel">
+        <section class="view task-view active" id="taskView">
+          <header class="task-header">
+            <div class="task-name"><span class="task-ring"></span><strong id="taskTitle">实现 Codex 风格智能体</strong><span class="slash">/</span><button id="projectButton" class="project-button">⌂ 选择项目</button></div>
+            <div class="task-header-actions"><button class="quiet-button" id="modelButton">Luna High ⌄</button><button class="more-button">···</button></div>
+          </header>
+          <div class="conversation" id="conversation"></div>
+          <aside class="turn-rail" aria-label="Conversation turns">
+            <div class="turn-markers" id="turnMarkers"></div>
+            <div class="turn-preview" id="turnPreview">
+              <strong>对味了！别忘了改这个，还有右侧侧边快速选择...</strong>
+              <p>我看到你标出的具体问题了：设置图标和消息操作图标要统一成更厚的线性图标；项目选择器不能再用 Windows 原生下拉框，否则会出现廉价蓝色。</p>
+              <div class="preview-tags"><span>index.html</span><span>styles.css</span><span>+1</span></div>
+            </div>
+          </aside>
+          <div class="composer-dock">
+            <div class="change-pill">1 file changed <span>+8</span> <b>-1</b></div>
+            <div class="pending-queue" id="pendingQueue"></div>
+            <div class="composer-context"><button id="composerProject" class="project-button">⌂ 选择项目</button><span>支持文件、命令和桌面操作</span></div>
+            <div class="composer">
+              <textarea id="composerInput" rows="1" placeholder="Ask for follow-up changes"></textarea>
+              <div class="composer-row">
+                <div class="composer-left"><button class="add-button">＋</button><button class="access-mode" id="accessMode"><span>◉</span> Full access</button></div>
+                <div class="composer-right"><span id="modelMeta">Luna High</span><button class="send-button" id="sendButton">↑</button></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view secondary-view" id="searchView">
+          <div class="secondary-header"><div><span class="eyebrow">WORKSPACE</span><h2>Search</h2></div><span class="shortcut-chip">⌘ K</span></div>
+          <div class="search-box"><span>⌕</span><input id="searchInput" placeholder="Search tasks, messages and files…" /></div>
+          <div class="empty-secondary" id="searchResults">输入关键词开始搜索。</div>
+        </section>
+
+        <section class="view secondary-view" id="projectView">
+          <div class="secondary-header"><div><span class="eyebrow">PROJECTS</span><h2>Project</h2></div><button class="primary-button" id="chooseProject">选择目录</button></div>
+          <div class="project-card"><div class="project-icon">▱</div><div><strong id="projectPath">尚未选择项目</strong><p>选择一个本地目录，Nano 才能读取文件、执行命令和维护上下文。</p></div></div>
+        </section>
+
+        <section class="view secondary-view" id="computerView">
+          <div class="secondary-header"><div><span class="eyebrow">COMPUTER CONTROL</span><h2>Plugins</h2></div><span class="status-chip"><span></span> Windows 原生</span></div>
+          <div class="computer-grid"><div class="screen-card"><div class="card-heading"><strong>当前屏幕</strong><button class="quiet-button" id="refreshScreen">截图</button></div><div class="screen-preview" id="screenPreview"><div class="screen-placeholder"><span>◉</span><p>截图后显示当前桌面</p></div></div></div><div class="control-card"><div class="card-heading"><strong>基础动作</strong><span class="muted-label">受控执行</span></div><div class="action-grid"><button data-computer="mouse_move">移动鼠标</button><button data-computer="mouse_click">点击当前位置</button><button data-computer="scroll">向上滚动</button><button data-computer="type">输入测试文本</button></div><p class="control-note">动作完成后会自动截图验证，高风险操作需要确认。</p></div></div>
+          <div class="windows-card"><div class="card-heading"><strong>窗口列表</strong><button class="quiet-button" id="refreshWindows">刷新</button></div><div class="window-list" id="windowList"><div class="empty-secondary">点击刷新获取当前窗口。</div></div></div>
+        </section>
+
+        <section class="view secondary-view" id="settingsView">
+          <div class="secondary-header"><div><span class="eyebrow">SETTINGS</span><h2>Settings</h2></div><button class="primary-button" id="saveSettings">保存</button></div>
+          <div class="settings-grid"><label>供应商<div class="select-control" id="providerSelect" data-value="demo"><button class="select-trigger" type="button"><span class="select-value">演示模式</span><span class="select-chevron">⌄</span></button><div class="select-menu"><button type="button" data-value="demo">演示模式</button><button type="button" data-value="openai">OpenAI 兼容</button><button type="button" data-value="anthropic">Anthropic 兼容</button></div></div></label><label>模型<input id="modelInput" placeholder="例如 gpt-4.1 / claude-sonnet" /></label><label>API Base URL<input id="baseUrlInput" placeholder="https://api.openai.com/v1" /></label><label>API Key<input id="apiKeyInput" type="password" placeholder="只保存在本机设置" /></label></div>
+          <div class="settings-note">ⓘ 首期配置用于本地 MVP。正式版本会接入 Windows Credential Manager 加密保存密钥。</div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="./renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+version: 1
+
+scope:
+  include: []
+  exclude:
+    - "node_modules/**"
+    - "assets/**"
+
+repowiki:
+  template: architecture
+  notes:
+    - text: "本项目是 Windows 优先、本地优先的 Codex 风格桌面智能体 MVP，基于 Electron 41，无前端框架，全部使用原生 JS。"
+    - text: "支持 OpenAI Chat Completions 与 Anthropic Messages 双供应商兼容接口，通过统一 callProvider 抽象切换。"
+    - text: "主进程 main.js 承载 Agent 工具循环（最多 8 步）和 Windows 原生电脑操控（截图、鼠标、键盘、窗口列表），通过 PowerShell + Win32 P/Invoke 实现。"
+  documents:
+    - title: "主进程与 Agent 循环"
+      goal: "分析 main.js 中的应用入口、IPC 注册、Agent 工具循环流程、双供应商调用抽象和权限控制机制。"
+      parent: ""
+      hints:
+        - "重点描述 runAgentLoop 的步进逻辑与 approval 中断机制"
+        - "说明 callProvider 对 OpenAI / Anthropic 的请求构造差异"
+    - title: "Windows 电脑操控层"
+      goal: "梳理 main.js 中截图、鼠标、键盘、滚轮、窗口列表等系统级能力的实现方式与安全边界。"
+      parent: ""
+      hints:
+        - "PowerShell 脚本 + Win32 P/Invoke 的调用链路"
+        - "protectedTool 权限门控逻辑"
+    - title: "Preload 桥接层"
+      goal: "说明 preload.js 如何通过 contextBridge 向渲染进程安全暴露 IPC 接口。"
+      parent: ""
+    - title: "渲染进程与 UI 逻辑"
+      goal: "分析 src/renderer.js 中的任务管理、对话流、Composer 交互、设置面板和电脑操控面板的状态管理与事件驱动。"
+      parent: ""
+      hints:
+        - "无框架，纯 DOM 操作 + 事件监听"
+        - "agent:event 流式消息的接收与渲染"
+    - title: "视图结构与样式体系"
+      goal: "描述 src/index.html 的页面骨架和 src/styles.css 的深色主题设计系统。"
+      parent: ""
+      hints:
+        - "自定义标题栏、侧边栏、对话区、Composer 布局"
+        - "CSS 变量与深色主题约定"
+
+knowledgecard:
+  notes:
+    - text: "模块划分建议：主进程（Agent 循环 + 系统交互）、Preload 桥接、渲染进程（UI + 状态）、样式层。"
+    - text: "本项目无任何第三方运行时依赖（仅 devDependency electron），所有功能均为手写实现，知识卡应突出各模块的手写约定与接口契约。"

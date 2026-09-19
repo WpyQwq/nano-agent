@@ -1,0 +1,14 @@
+{
+  "name": "nano-agent",
+  "version": "0.1.0",
+  "description": "Codex-style local-first desktop agent for Windows",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check src/renderer.js"
+  },
+  "devDependencies": {
+    "electron": "^41.0.2"
+  }
+}
