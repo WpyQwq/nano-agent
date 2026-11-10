@@ -1,107 +1,81 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nano Agent</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'">
+  <title>Nano · 智能体工作台</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="model-ui.css">
+  <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="titlebar">
-      <div class="titlebar-left">
-        <button class="window-toggle chrome-icon" title="Toggle sidebar"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9 5v14"/></svg></button>
-        <span class="titlebar-divider"></span>
-        <button class="chrome-icon" title="Back">‹</button>
-        <button class="chrome-icon muted" title="Forward">›</button>
-        <button class="menu-button">File</button>
-        <button class="menu-button">Edit</button>
-        <button class="menu-button">View</button>
-        <button class="menu-button">Help</button>
-      </div>
-      <div class="titlebar-right">
-        <span class="live-dot"></span><span class="workspace-label">Nano Agent</span>
-        <button class="window-control" data-window-control="minimize">─</button>
-        <button class="window-control" data-window-control="maximize">□</button>
-        <button class="window-control close" data-window-control="close">✕</button>
-      </div>
-    </header>
-
-    <div class="app-grid">
-      <aside class="sidebar" id="sidebar">
-        <nav class="primary-nav">
-          <button class="nav-item active" data-view="task"><span class="nav-glyph"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>New task</span></button>
-          <button class="nav-item" data-view="search"><span class="nav-glyph"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="5.8"/><path d="m15.2 15.2 4.1 4.1"/></svg></span><span>Search</span></button>
-          <button class="nav-item" data-view="computer"><span class="nav-glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="m9.5 12 1.7 1.7 3.5-3.7"/></svg></span><span>Plugins</span></button>
-          <button class="nav-item" data-view="project"><span class="nav-glyph"><svg viewBox="0 0 24 24"><path d="M4 7.5h6l1.8 2H20v8.2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 7.5v-1a2 2 0 0 1 2-2h3l1.8 2"/></svg></span><span>Project</span></button>
-        </nav>
-
-        <div class="section-heading">Tasks</div>
-        <div class="task-list" id="taskList"></div>
-
-        <div class="sidebar-grow"></div>
-        <button class="nav-item settings-button" data-view="settings"><span class="nav-glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.2a7.7 7.7 0 0 0 0-2.4l1.5-1.2-1.5-2.6-1.8.7a7.3 7.3 0 0 0-2-1.2L15 4.5h-3l-.3 2a7.3 7.3 0 0 0-2 1.2l-1.8-.7-1.5 2.6L8 10.8a7.7 7.7 0 0 0 0 2.4l-1.5 1.2L8 17l1.8-.7a7.3 7.3 0 0 0 2 1.2l.3 2h3l.3-2a7.3 7.3 0 0 0 2-1.2l1.8.7 1.5-2.6Z"/></svg></span><span>Settings</span><span class="key-hint">⌘,</span></button>
-        <div class="sidebar-bottom"><span><span class="live-dot"></span><span id="providerLabel">演示模式</span></span><button class="help-button">?</button></div>
-      </aside>
-
-      <main class="main-panel">
-        <section class="view task-view active" id="taskView">
-          <header class="task-header">
-            <div class="task-name"><span class="task-ring"></span><strong id="taskTitle">实现 Codex 风格智能体</strong><span class="slash">/</span><button id="projectButton" class="project-button">⌂ 选择项目</button></div>
-            <div class="task-header-actions"><button class="quiet-button" id="modelButton">Luna High ⌄</button><button class="more-button">···</button></div>
-          </header>
-          <div class="conversation" id="conversation"></div>
-          <aside class="turn-rail" aria-label="Conversation turns">
-            <div class="turn-markers" id="turnMarkers"></div>
-            <div class="turn-preview" id="turnPreview">
-              <strong>对味了！别忘了改这个，还有右侧侧边快速选择...</strong>
-              <p>我看到你标出的具体问题了：设置图标和消息操作图标要统一成更厚的线性图标；项目选择器不能再用 Windows 原生下拉框，否则会出现廉价蓝色。</p>
-              <div class="preview-tags"><span>index.html</span><span>styles.css</span><span>+1</span></div>
-            </div>
-          </aside>
-          <div class="composer-dock">
-            <div class="change-pill">1 file changed <span>+8</span> <b>-1</b></div>
-            <div class="pending-queue" id="pendingQueue"></div>
-            <div class="composer-context"><button id="composerProject" class="project-button">⌂ 选择项目</button><span>支持文件、命令和桌面操作</span></div>
-            <div class="composer">
-              <textarea id="composerInput" rows="1" placeholder="Ask for follow-up changes"></textarea>
-              <div class="composer-row">
-                <div class="composer-left"><button class="add-button">＋</button><button class="access-mode" id="accessMode"><span>◉</span> Full access</button></div>
-                <div class="composer-right"><span id="modelMeta">Luna High</span><button class="send-button" id="sendButton">↑</button></div>
-              </div>
-            </div>
+  <header class="titlebar">
+    <button class="icon-button" id="toggleSidebar" aria-label="切换侧栏" title="切换侧栏"><i data-lucide="panel-left"></i></button>
+    <span class="app-caption">Nano</span><span class="titlebar-space"></span>
+    <button class="window-button" data-window="minimize" aria-label="最小化"><i data-lucide="minus"></i></button>
+    <button class="window-button" data-window="maximize" aria-label="最大化"><i data-lucide="square"></i></button>
+    <button class="window-button close" data-window="close" aria-label="关闭"><i data-lucide="x"></i></button>
+  </header>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-row"><button id="workspaceMenu" class="brand-button" popovertarget="workspacePopover">Nano<i data-lucide="chevron-down"></i></button><button class="icon-button" data-view="search" aria-label="搜索" title="搜索 Ctrl+K"><i data-lucide="search"></i></button></div>
+      <nav class="main-nav" aria-label="主导航">
+        <button class="nav-item" id="newTask"><i data-lucide="square-pen"></i><span>新建会话</span><kbd>Ctrl N</kbd></button>
+        <button class="nav-item" data-view="project"><i data-lucide="folder-open"></i><span>项目文件</span></button>
+        <button class="nav-item" data-view="terminal"><i data-lucide="square-terminal"></i><span>终端</span></button>
+        
+      </nav>
+      <div class="list-heading"><span id="listHeading">最近会话</span></div>
+      <div class="task-list" id="taskList"></div>
+      <div class="sidebar-footer"><button class="nav-item" data-view="settings"><i data-lucide="settings"></i><span>设置</span><kbd>Ctrl ,</kbd></button><span class="sr-only" id="providerStatus"></span></div>
+    </aside>
+    <main id="main">
+      <section class="view chat-view active" id="chatView">
+        <header class="page-toolbar"><div class="toolbar-title"><i data-lucide="folder"></i><button id="projectButton" title="选择项目">选择项目</button><span class="separator">/</span><span id="taskTitle">新建会话</span></div><div class="toolbar-actions"><button class="icon-button hidden" id="toggleActivity" title="执行记录" aria-label="执行记录"><i data-lucide="list-filter"></i></button><button class="icon-button" id="toggleInspector" title="文件与来源" aria-label="文件与来源"><i data-lucide="panel-right"></i></button><button class="icon-button" popovertarget="taskPopover" title="会话选项" aria-label="会话选项"><i data-lucide="ellipsis"></i></button></div></header>
+        <div class="chat-body"><div class="conversation" id="conversation" aria-live="polite"></div><aside class="activity-panel hidden" id="activityPanel"><div class="panel-heading"><div class="inspector-tabs"><button class="active" data-inspector-tab="files">文件</button><button data-inspector-tab="activity">执行</button></div><button class="icon-button small" id="closeActivity" aria-label="关闭面板"><i data-lucide="x"></i></button></div><div id="inspectorFiles"><div id="planHub" class="hub-section"></div><details id="summaryHub" class="hub-section hidden"><summary>上下文摘要</summary><div id="summaryText"></div></details><div class="hub-section"><div class="hub-heading">变更<button class="icon-button small" id="viewChanges" title="查看全部变更" aria-label="查看全部变更"><i data-lucide="arrow-up-right"></i></button></div><div id="outputList"></div></div><div class="hub-section"><div class="hub-heading">来源<button class="icon-button small" id="addSource" title="添加来源" aria-label="添加来源"><i data-lucide="plus"></i></button></div><div id="sourceList"></div></div></div><div id="activityList" class="hidden"></div></aside></div>
+        <nav class="turn-rail" id="turnRail" aria-label="对话定位"></nav><button class="jump-bottom icon-button hidden" id="jumpBottom" aria-label="回到最新消息" title="回到最新消息"><i data-lucide="arrow-down"></i></button><div class="composer-area">
+          <button class="change-pill hidden" id="changePill" title="查看实际变更"></button>
+          <div class="approval-host" id="approvalHost"></div><div id="promptQueue" class="prompt-queue"></div>
+          <div id="contextFiles" class="context-files"></div>
+          <div class="composer" id="composer">
+            <textarea id="composerInput" rows="2" placeholder="与 Nano 一起工作" aria-label="输入消息"></textarea>
+            <div class="composer-bottom"><div class="composer-options"><button class="mode-button" id="modeButton" popovertarget="modePopover"><span>构建</span><i data-lucide="chevron-down"></i></button><button class="icon-button" id="attachFile" aria-label="添加" title="添加" popovertarget="addPopover"><i data-lucide="plus"></i></button><button class="permission-button" id="permissionButton" popovertarget="permissionPopover"><i data-lucide="shield-check"></i><span>按需确认</span></button></div><div class="composer-options"><button class="context-meter" id="contextMeter" aria-label="上下文用量"><span></span><span class="context-tooltip" id="contextTooltip">暂无用量数据</span></button><button class="model-button" id="modelButton"><span>配置模型</span><i data-lucide="chevron-down"></i></button><button class="send-button" id="sendButton" title="发送消息" aria-label="发送消息"><i data-lucide="arrow-up"></i></button></div></div>
           </div>
-        </section>
-
-        <section class="view secondary-view" id="searchView">
-          <div class="secondary-header"><div><span class="eyebrow">WORKSPACE</span><h2>Search</h2></div><span class="shortcut-chip">⌘ K</span></div>
-          <div class="search-box"><span>⌕</span><input id="searchInput" placeholder="Search tasks, messages and files…" /></div>
-          <div class="empty-secondary" id="searchResults">输入关键词开始搜索。</div>
-        </section>
-
-        <section class="view secondary-view" id="projectView">
-          <div class="secondary-header"><div><span class="eyebrow">PROJECTS</span><h2>Project</h2></div><button class="primary-button" id="chooseProject">选择目录</button></div>
-          <div class="project-card"><div class="project-icon">▱</div><div><strong id="projectPath">尚未选择项目</strong><p>选择一个本地目录，Nano 才能读取文件、执行命令和维护上下文。</p></div></div>
-        </section>
-
-        <section class="view secondary-view" id="computerView">
-          <div class="secondary-header"><div><span class="eyebrow">COMPUTER CONTROL</span><h2>Plugins</h2></div><span class="status-chip"><span></span> Windows 原生</span></div>
-          <div class="computer-grid"><div class="screen-card"><div class="card-heading"><strong>当前屏幕</strong><button class="quiet-button" id="refreshScreen">截图</button></div><div class="screen-preview" id="screenPreview"><div class="screen-placeholder"><span>◉</span><p>截图后显示当前桌面</p></div></div></div><div class="control-card"><div class="card-heading"><strong>基础动作</strong><span class="muted-label">受控执行</span></div><div class="action-grid"><button data-computer="mouse_move">移动鼠标</button><button data-computer="mouse_click">点击当前位置</button><button data-computer="scroll">向上滚动</button><button data-computer="type">输入测试文本</button></div><p class="control-note">动作完成后会自动截图验证，高风险操作需要确认。</p></div></div>
-          <div class="windows-card"><div class="card-heading"><strong>窗口列表</strong><button class="quiet-button" id="refreshWindows">刷新</button></div><div class="window-list" id="windowList"><div class="empty-secondary">点击刷新获取当前窗口。</div></div></div>
-        </section>
-
-        <section class="view secondary-view" id="settingsView">
-          <div class="secondary-header"><div><span class="eyebrow">SETTINGS</span><h2>Settings</h2></div><button class="primary-button" id="saveSettings">保存</button></div>
-          <div class="settings-grid"><label>供应商<div class="select-control" id="providerSelect" data-value="demo"><button class="select-trigger" type="button"><span class="select-value">演示模式</span><span class="select-chevron">⌄</span></button><div class="select-menu"><button type="button" data-value="demo">演示模式</button><button type="button" data-value="openai">OpenAI 兼容</button><button type="button" data-value="anthropic">Anthropic 兼容</button></div></div></label><label>模型<input id="modelInput" placeholder="例如 gpt-4.1 / claude-sonnet" /></label><label>API Base URL<input id="baseUrlInput" placeholder="https://api.openai.com/v1" /></label><label>API Key<input id="apiKeyInput" type="password" placeholder="只保存在本机设置" /></label></div>
-          <div class="settings-note">ⓘ 首期配置用于本地 MVP。正式版本会接入 Windows Credential Manager 加密保存密钥。</div>
-        </section>
-      </main>
-    </div>
+          <span class="sr-only" id="runStatus" role="status"></span>
+        </div>
+      </section>
+      <section class="view document-view" id="searchView"><div class="page-content"><header class="section-header"><h1>搜索</h1><span class="subtle">会话与项目内容</span></header><div class="search-field"><i data-lucide="search"></i><input id="searchInput" placeholder="搜索会话、消息或项目文件…" aria-label="搜索内容"><select id="searchScope" aria-label="搜索范围"><option value="tasks">会话</option><option value="files">项目内容</option></select></div><div class="result-list" id="searchResults"><p class="empty">输入关键词开始搜索</p></div></div></section>
+      <section class="view document-view" id="projectView"><div class="page-content wide"><header class="section-header"><div><h1>项目文件</h1><p id="projectPath" class="subtle">选择一个本地目录开始工作</p></div><button class="button" id="chooseProject"><i data-lucide="folder-open"></i>打开目录</button></header><div class="project-tabs" role="tablist"><button class="tab active" data-project-tab="files">文件</button><button class="tab" data-project-tab="git">Git 变更</button><button class="tab" data-project-tab="review">变更审阅</button><span class="flex-grow"></span><button class="icon-button" id="refreshProject" title="刷新" aria-label="刷新项目"><i data-lucide="refresh-cw"></i></button><button class="icon-button" id="openProject" title="在资源管理器中打开" aria-label="在资源管理器中打开"><i data-lucide="external-link"></i></button></div><div class="file-workspace" id="fileWorkspace"><div class="file-tree" id="fileTree"><p class="empty">尚未打开项目</p></div><div class="file-preview"><div class="file-heading"><span id="previewPath">文件预览</span><button class="button compact hidden" id="addContext"><i data-lucide="plus"></i>加入上下文</button></div><pre id="fileContent" tabindex="0">选择文件查看内容</pre></div></div><pre id="gitOutput" class="output hidden" tabindex="0"></pre><div id="changeReview" class="change-review hidden"></div></div></section>
+      <section class="view document-view" id="terminalView"><div class="page-content wide"><header class="section-header"><div><h1>终端</h1><p class="subtle">PowerShell · 在当前项目目录执行</p></div><button class="button hidden" id="stopCommand"><i data-lucide="square"></i>停止命令</button></header><form id="commandForm" class="terminal-form"><i data-lucide="chevron-right"></i><input id="commandInput" placeholder="输入命令，例如 git status" aria-label="PowerShell 命令" required><button class="button primary" id="runCommand" type="submit">执行</button></form><pre class="output terminal-output" id="terminalOutput" tabindex="0">命令输出会显示在这里。</pre></div></section>
+      <section class="view document-view" id="computerView"><div class="page-content wide"><header class="section-header"><div><h1>电脑操控</h1><p class="subtle">观察桌面，或在会话中描述需要完成的操作</p></div><button class="button" id="refreshScreen"><i data-lucide="scan"></i>截取屏幕</button></header><div class="screen-preview" id="screenPreview"><i data-lucide="monitor"></i><p>屏幕截图仅在你主动截取时显示</p></div><div class="panel-heading space-top">桌面窗口<button class="button compact" id="refreshWindows"><i data-lucide="refresh-cw"></i>刷新</button></div><div id="windowList" class="settings-group"><p class="empty">刷新以读取窗口列表</p></div><details class="desktop-controls"><summary>手动操作</summary><form id="desktopForm" class="desktop-form"><label>动作<select id="desktopType"><option value="mouse_click">点击</option><option value="mouse_move">移动</option><option value="type">输入文字</option><option value="scroll">滚动</option><option value="key_press">按键</option></select></label><label>X<input id="desktopX" type="number" value="0"></label><label>Y<input id="desktopY" type="number" value="0"></label><label>文字 / 按键<input id="desktopText" placeholder="文字或 CTRL, L"></label><label>滚动格数<input id="desktopAmount" type="number" value="1"></label><button class="button" type="submit">确认操作</button></form></details></div></section>
+      <section class="view document-view" id="settingsView"><div class="settings-layout"><nav class="settings-nav" aria-label="设置分类"><button class="back-button" id="backToChat"><i data-lucide="arrow-left"></i>返回工作台</button><span class="list-heading">偏好设置</span><button class="nav-item active" data-settings-tab="general"><i data-lucide="settings"></i>通用</button><button class="nav-item" data-settings-tab="model"><i data-lucide="sliders-horizontal"></i>模型连接</button><button class="nav-item" data-settings-tab="appearance"><i data-lucide="sun"></i>外观</button><button class="nav-item" data-settings-tab="agent"><i data-lucide="bot"></i>智能体</button><button class="nav-item" data-settings-tab="mcp"><i data-lucide="plug"></i>MCP 扩展</button><button class="nav-item" data-settings-tab="storage"><i data-lucide="hard-drive"></i>存储与历史</button></nav><form id="settingsForm" class="settings-content">
+        <div class="settings-section" data-section="general"><h1>通用</h1><h2>权限</h2><div class="settings-group"><label class="setting-row"><span><strong>默认执行权限</strong></span><select id="permissionSelect"><option value="ask">按需确认</option><option value="read">仅观察</option><option value="full">完全访问</option></select></label></div><h2>键盘快捷键</h2><div class="settings-group"><div class="setting-row"><span>新建会话</span><kbd>Ctrl N</kbd></div><div class="setting-row"><span>搜索</span><kbd>Ctrl K</kbd></div><div class="setting-row"><span>打开设置</span><kbd>Ctrl ,</kbd></div><div class="setting-row"><span>停止当前运行</span><kbd>Esc</kbd></div></div></div>
+        <div class="settings-section hidden" data-section="model"><h1>模型连接</h1><p class="subtle">使用你自己的服务商，支持兼容 API。</p><div class="settings-group form-group"><label>供应商<select id="providerInput"><option value="demo">演示模式（不调用模型）</option><option value="openai">OpenAI 兼容</option><option value="anthropic">Anthropic 兼容</option></select></label><label>模型名称<input id="modelInput" placeholder="填写服务商提供的模型 ID"></label><label>API Base URL<input id="baseUrlInput" type="url" placeholder="留空使用供应商默认地址"></label><label>API Key<input id="apiKeyInput" type="password" autocomplete="off" placeholder="密钥由系统加密保存"></label><label class="checkbox-row"><input type="checkbox" id="clearKey">清除已保存的密钥</label></div><div class="inline-actions"><button class="button" type="button" id="testConnection"><i data-lucide="unplug"></i>测试连接</button><span id="connectionResult" class="subtle" role="status"></span></div></div>
+        <div class="settings-section hidden" data-section="appearance"><h1>外观</h1><h2>界面</h2><div class="settings-group"><label class="setting-row"><span><strong>主题</strong></span><select id="themeInput"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label><label class="setting-row"><span><strong>正文字号</strong></span><select id="fontSizeInput"><option value="13">13 px</option><option value="14">14 px</option><option value="15">15 px</option><option value="16">16 px</option></select></label></div></div>
+        <div class="settings-section hidden" data-section="agent"><h1>智能体</h1><h2>执行</h2><div class="settings-group"><label class="setting-row"><span><strong>最大模型轮数</strong><small>达到上限后停止，避免无限工具循环</small></span><input id="maxStepsInput" type="number" min="1" max="40" value="20"></label></div><h2>自定义指令</h2><label class="subtle" for="systemPromptInput">补充偏好、项目约定或智能体的工作方式</label><textarea id="systemPromptInput" rows="8" placeholder="例如：始终使用中文回复，修改前先阅读项目规范。"></textarea><h2>高级功能</h2><div class="settings-group"><div class="setting-row"><span><strong>电脑操控</strong></span><button class="button compact" type="button" data-view="computer">打开</button></div></div></div>
+        <div class="settings-section hidden" data-section="mcp"><h1>MCP 扩展</h1><div id="mcpServerList" class="mcp-server-list"></div><h2>添加扩展</h2><div class="settings-group form-group"><label>名称<input id="mcpNameInput" placeholder="扩展名称"></label><label>连接方式<select id="mcpTypeInput"><option value="stdio">本地进程（stdio）</option><option value="http">HTTP 服务</option></select></label><label id="mcpCommandLabel">命令<input id="mcpCommandInput" placeholder="例如 node / npx / uvx"></label><label id="mcpArgsLabel">参数（JSON 数组）<input id="mcpArgsInput" placeholder='["server.js"]'></label><label id="mcpUrlLabel" class="hidden">服务地址<input id="mcpUrlInput" placeholder="https://example.com/mcp"></label><details><summary>环境变量</summary><textarea id="mcpEnvInput" rows="3" placeholder='{"TOKEN":"..."}' aria-label="MCP 环境变量"></textarea></details><label class="checkbox-row"><input type="checkbox" id="mcpReadOnlyInput">只信任明确声明只读的工具</label><button class="button" type="button" id="addMcp"><i data-lucide="plus"></i>添加扩展</button></div></div><div class="settings-section hidden" data-section="storage"><h1>存储与历史</h1><div class="settings-group"><div class="setting-row"><span><strong>本地数据目录</strong><small id="dataPath">正在读取…</small></span><button class="button compact" type="button" id="openData">打开</button></div><div class="setting-row"><span><strong>会话记录</strong><small id="taskCount">0 个会话</small></span><button class="button compact" type="button" id="viewArchived">查看归档</button></div><div class="setting-row"><span><strong>密钥存储</strong><small>使用 Electron safeStorage 系统加密，不写入浏览器存储</small></span><i data-lucide="lock-keyhole"></i></div></div><h2>关于 Nano</h2><p class="subtle">JavaScript · Electron · LangChain<br>所有会话和执行记录保存在本机。</p></div>
+        <footer class="settings-footer"><span id="saveStatus" class="subtle" role="status"></span><button class="button primary" type="submit">保存设置</button></footer>
+      </form></div></section>
+    </main>
   </div>
-  <div class="toast" id="toast"></div>
-  <script src="./renderer.js"></script>
+  <div popover id="workspacePopover" class="popover workspace-popover"><button data-workspace-mode="code"><span><strong>Code</strong><small>开发、调试和构建</small></span><i data-lucide="code-2"></i></button><button data-workspace-mode="work"><span><strong>Work</strong><small>研究、整理和创作</small></span><i data-lucide="briefcase"></i></button></div>
+  <div popover id="addPopover" class="popover add-popover"><button id="addFilesCommand"><i data-lucide="paperclip"></i>文件和文件夹</button><button id="addPlanCommand"><i data-lucide="list-checks"></i>规划模式</button><button id="addMcpCommand"><i data-lucide="plug"></i>MCP 扩展</button><button id="addCompactCommand"><i data-lucide="minimize-2"></i>压缩上下文</button></div>
+  <div id="slashMenu" class="slash-menu hidden" role="listbox"></div>
+  <dialog id="compactDone"><h2>上下文已压缩</h2><p>原始对话已保留，后续任务将使用摘要。</p><div class="dialog-actions"><button class="button primary" type="button" id="closeCompactDone">完成</button></div></dialog>
+  <div popover id="taskPopover" class="popover task-popover"><button id="renameTask"><i data-lucide="pencil"></i>重命名</button><button id="pinTask"><i data-lucide="pin"></i>置顶 / 取消置顶</button><button id="archiveTask"><i data-lucide="archive"></i>归档 / 恢复</button><button id="exportTask"><i data-lucide="download"></i>导出 Markdown</button><button id="compactTask"><i data-lucide="minimize-2"></i>压缩上下文</button></div>
+  <div popover id="modePopover" class="popover mode-popover"><button data-agent-mode="build"><i data-lucide="hammer"></i><span><strong>构建</strong><small>规划、编辑并执行任务</small></span></button><button data-agent-mode="plan"><i data-lucide="list-checks"></i><span><strong>规划</strong><small>只读分析，先制定实施方案</small></span></button></div><div popover id="permissionPopover" class="popover permission-popover"><button data-permission="ask"><i data-lucide="shield-check"></i><span><strong>按需确认</strong><small>修改文件和执行操作前询问</small></span></button><button data-permission="read"><i data-lucide="eye"></i><span><strong>仅观察</strong><small>读取和分析，不修改项目</small></span></button><button data-permission="full"><i data-lucide="shield-alert"></i><span><strong>完全访问</strong><small>自动执行文件、命令与桌面操作</small></span></button></div>
+  <dialog id="renameDialog"><form id="renameForm"><h2>重命名会话</h2><input id="renameInput" required maxlength="100" aria-label="会话名称"><div class="dialog-actions"><button class="button" id="cancelRename" type="button">取消</button><button class="button primary" type="submit">保存</button></div></form></dialog>
+  <dialog id="contextDialog"><div class="panel-heading">添加项目文件<button class="icon-button" id="closeContext" aria-label="关闭"><i data-lucide="x"></i></button></div><input id="contextFilter" placeholder="按文件名筛选…" aria-label="筛选文件"><div id="contextList" class="context-list"></div></dialog>
+  <dialog id="planDialog"><form id="planForm"><h2>工作计划</h2><textarea id="planInput" rows="8" placeholder="每行一个步骤" aria-label="工作计划"></textarea><div class="dialog-actions"><button class="button" type="button" id="cancelPlan">取消</button><button class="button primary" type="submit">保存计划</button></div></form></dialog><div class="toast" id="toast" role="status"></div>
+  <script src="../node_modules/lucide/dist/umd/lucide.min.js"></script>
+  <script src="../node_modules/marked/lib/marked.umd.js"></script>
+  <script src="../node_modules/dompurify/dist/purify.min.js"></script>
+  <script src="motion.js"></script><script src="select-ui.js"></script><script src="model-ui.js"></script><script src="sidepanel.js"></script><script src="renderer.js"></script>
 </body>
 </html>
+
+
+
+
+
