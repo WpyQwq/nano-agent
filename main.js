@@ -9,17 +9,19 @@ const { AgentRuntime, createModel } = require('./backend/agent');
 const { Checkpoints } = require('./backend/checkpoints');
 const { McpManager } = require('./backend/mcp');
 const { ModelConnections } = require('./backend/models');
+const { Campus } = require('./backend/campus');
 const { SubagentManager } = require('./backend/subagents');
 const { registerSidepanel } = require('./backend/sidepanel');
 const { registerSideAgent } = require('./backend/side-agent');
 const { randomUUID } = require('node:crypto');
 // Keep application data next to the project rather than consuming the system disk.
-app.setPath('userData', process.env.NANO_DATA_PATH || (app.isPackaged ? path.join(app.getPath('appData'), 'Nano Agent') : path.join(__dirname, '.nano')));
-const defaultWorkspace = app.isPackaged ? path.join(app.getPath('documents'), 'Nano Workspace') : path.join(__dirname,'workspace');
+app.setPath('userData', process.env.NANO_DATA_PATH || (app.isPackaged ? path.join(app.getPath('appData'), 'Nano Campus') : path.join(__dirname, '.nano')));
+const defaultWorkspace = app.isPackaged ? path.join(app.getPath('documents'), 'Nano Campus Workspace') : path.join(__dirname,'workspace');
 let mainWindow;
 let store;
 let checkpoints;
 let modelConnections;
+let campus;
 let sideAgent;
 const mcp = new McpManager();
 const activeRuns = new Set();
@@ -180,6 +182,9 @@ async function migrateLegacySettings() {
 
 const AGENT_TOOLS = [
   { type:'function', function:{name:'spawn_agent',description:'将可独立完成的子任务交给子智能体，等待结果。权限与父任务一致。',parameters:{type:'object',properties:{name:{type:'string'},instruction:{type:'string'},context:{type:'string'}},required:['instruction']}} },
+  { type:'function', function:{ name:'campus_search', description:'查询用户提供的校园资料，作为学校制度、活动时间、地点等问题的事实依据。', parameters:{type:'object',properties:{query:{type:'string'}},required:['query']} } },
+  { type:'function', function:{ name:'campus_list_tasks', description:'查看用户本地保存的校园待办事项。', parameters:{type:'object',properties:{}} } },
+  { type:'function', requiresApproval:true, function:{ name:'campus_add_task', description:'在用户明确要求时保存一项校园待办，可选截止日期 YYYY-MM-DD。', parameters:{type:'object',properties:{title:{type:'string'},dueDate:{type:'string'}},required:['title']} } },
   { type: 'function', function: { name: 'update_plan', description: '创建或更新用户可见的工作计划。复杂任务开始时列出步骤，完成步骤后更新状态。每次提交完整列表，至多一个进行中。', parameters: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, status: { type: 'string', enum: ['pending','in_progress','completed'] } }, required: ['text','status'] } } }, required: ['steps'] } } },
   { type: 'function', function: { name: 'ask_user', description: '向用户提出澄清问题或请求敏感操作授权，并等待文本回复。可提供可选答案。', parameters: { type: 'object', properties: { question: { type: 'string' }, options: { type: 'array', items: { type: 'string' } } }, required: ['question'] } } },
   { type: 'function', function: { name: 'trash_file', description: '将项目中的文件或目录移入回收站，始终需要用户批准。', parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] } } },
@@ -198,6 +203,9 @@ const AGENT_TOOLS = [
 async function executeAgentTool(name, input, payload, options) {
   const projectPath = payload.projectPath;
   if(name==='spawn_agent')return subagents.run(payload,input,{signal:options.signal,emit:event=>{if(options.emit)options.emit(event);else if(!mainWindow?.isDestroyed())mainWindow.webContents.send('agent:event',event);}});
+  if(name==='campus_search')return {results:await campus.search(input.query)};
+  if(name==='campus_list_tasks')return {tasks:(await campus.load()).tasks};
+  if(name==='campus_add_task')return campus.saveTask(input);
   if (name === 'update_plan') {
     if (!Array.isArray(input.steps) || input.steps.length > 30 || input.steps.some(step => !step.text || !['pending','in_progress','completed'].includes(step.status)) || input.steps.filter(step => step.status === 'in_progress').length > 1) throw new Error('计划最多 30 步，且只能有一个进行中步骤');
     const plan = input.steps.map(step => ({ text: String(step.text).slice(0,500), status: step.status }));
@@ -305,6 +313,9 @@ ipcMain.handle('computer:action', async (_event, action) => {
 });
 ipcMain.handle('computer:windows', () => listWindows());
 ipcMain.handle('settings:load', () => store.settings());
+ipcMain.handle('campus:load', () => campus.load());
+ipcMain.handle('campus:note', (_event, note) => campus.saveNote(note));
+ipcMain.handle('campus:task', (_event, task) => campus.saveTask(task));
 ipcMain.handle('settings:save', (_event, config) => store.saveSettings(config));
 ipcMain.handle('models:list', () => modelConnections.list());
 ipcMain.handle('models:save', (_event,input) => modelConnections.save(input));
@@ -370,14 +381,15 @@ ipcMain.handle('agent:run', async (event, payload) => {
   const task = (await store.tasks()).find(t => t.id === payload.taskId);
   if (!task) throw new Error('会话不存在，请先保存会话');
   const rules = await fs.readFile(path.join(__dirname,'AGENT.md'),'utf8');
+  const campusRules = await fs.readFile(path.join(__dirname,'CAMPUS_AGENT.md'),'utf8');
   const projectRules = [];
   for(const name of ['AGENTS.md','AGENT.md']) {
     try { const file=await workspace.readFile(task.projectPath,name);if(file.content!==rules)projectRules.push(`${name}:\n${file.content.slice(0,60000)}`); }
     catch(error) { if(error.code!=='ENOENT' && error.message!=='请先选择项目目录')console.warn('项目规则读取失败:',error.message); }
   }
-  config.systemPrompt = `你是 Nano，本地智能体。复杂任务使用 update_plan，需要用户决定时使用 ask_user。\n${rules}\n${projectRules.join('\n\n')}\n${config.systemPrompt || ''}`;
+  config.systemPrompt = `你是 Nano 智能体。复杂任务使用 update_plan，需要用户决定时使用 ask_user。\n${rules}\n${payload.workMode==='campus'?campusRules:''}\n${projectRules.join('\n\n')}\n${config.systemPrompt || ''}`;
   activeRuns.add(payload.runId); let finalEvent;
-  config.systemPrompt+=`\n${payload.mode==='plan'?'当前为规划模式：只读分析，制定实施方案，不执行修改和命令。':'当前为构建模式：实际执行并验证用户目标。'}\n${payload.workMode==='work'?'工作模式：关注研究、整理和创作，也可以根据需要编程。':'代码模式：关注开发与调试，也可以根据需要处理通用任务。'}`;
+  config.systemPrompt+=`\n${payload.mode==='plan'?'当前为规划模式：只读分析，制定实施方案，不执行修改和命令。':'当前为构建模式：实际执行并验证用户目标。'}\n${payload.workMode==='campus'?'校园模式：关注学习安排和校园生活，优先查询校园资料，同时保留通用能力。':payload.workMode==='work'?'工作模式：关注研究、整理和创作，也可以根据需要编程。':'代码模式：关注开发与调试，也可以根据需要处理通用任务。'}`;
   const thought={default:'根据任务难度选择合适的分析深度。',low:'快速分析核心需求和主要风险，优先简洁执行。',medium:'分析关键约束、实现方案和验证方式，兼顾效率。',high:'仔细分析需求、边界条件、可选方案和风险，并充分验证结果。'};
   config.systemPrompt+=`\n思考策略：${thought[payload.selection?.effort] || thought.default}`;
   delete config.reasoningEffort;delete config.outputConfig;delete config.forceReasoningEffort;
@@ -424,6 +436,7 @@ ipcMain.handle('agent:answer', (_event, {runId,questionId,answer}) => { const qu
 ipcMain.handle('side:chat',async (_event,{text,history,selection})=>{const config=await selectedConfig(selection);if(config.provider==='demo')throw new Error('请先连接模型');const prior=Array.isArray(history)?history.filter(item=>['user','assistant'].includes(item.role)).slice(-20).map(item=>({role:item.role,content:String(item.content).slice(0,5000)})):[];const stream=await createModel(config).stream([{role:'system',content:'你是 Nano 侧边对话助手。请使用中文简洁回答；不要声称执行了没有工具支持的操作。'},...prior,{role:'user',content:String(text).slice(0,20000)}],{signal:AbortSignal.timeout(60000)});let answer='';for await(const chunk of stream)if(typeof chunk.content==='string')answer+=chunk.content;return answer || '模型没有返回文本';});
 app.whenReady().then(async () => {
   store = new Store(app.getPath('userData'), safeStorage);
+  campus = new Campus(store);
   modelConnections = new ModelConnections({store});
   checkpoints = new Checkpoints({directory:path.join(app.getPath('userData'),'checkpoints'),trashItem:target=>shell.trashItem(target)});
   registerSidepanel({ipcMain,getWindow:()=>mainWindow,authorizedRoot,getCheckpoints:()=>checkpoints,getSettings:()=>store.settings()});

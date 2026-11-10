@@ -5,6 +5,8 @@ const state = { tasks: [], currentId: null, config: {}, view: 'chat', archived: 
 state.reviewTab=false;state.mcpBusy=new Set();state.reviewRecords=[];
 const labels = { list_files:'列出文件', read_file:'读取文件', search_text:'搜索内容', write_file:'写入文件', run_command:'执行命令', trash_file:'移入回收站', computer_screenshot:'观察屏幕', computer_windows:'读取窗口', computer_action:'操作桌面', git_status:'检查 Git 状态', git_diff:'读取 Git 差异' };
 Object.assign(labels,{update_plan:'更新工作计划',ask_user:'询问用户'});
+Object.assign(labels,{campus_search:'检索校园资料',campus_list_tasks:'查看学习待办',campus_add_task:'添加学习待办'});
+state.campus={notes:[],tasks:[]};
 const permissionLabels = { ask:'按需确认', full:'完全访问', read:'仅观察' };
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon = (name) => `<i data-lucide="${name}"></i>`;
@@ -31,6 +33,7 @@ function showView(view) {
   hidePopovers();
   if(view==='search') setTimeout(() => $('searchInput').focus(),50);
   if(view==='project') safely(refreshFiles);
+  if(view==='campus') safely(refreshCampus);
   if(view==='settings') $('saveStatus').textContent='';
   window.NanoMotion.enter(document.getElementById(`${view}View`),3);
 }
@@ -46,8 +49,13 @@ function selectTask(id) {
 }
 function markdown(content) { return window.DOMPurify.sanitize(window.marked.parse(content || '', { breaks:true }), { FORBID_TAGS:['img','style','iframe'], FORBID_ATTR:['style'] }); }
 function homeHtml(task) {
-  const name=task.projectPath?.split(/[\\/]/).pop() || '工作区';
-  return `<div class="welcome simple-welcome">${icon('sparkles')}<h1>今天想在 ${esc(name)} 做什么？</h1><button class="home-project-link" data-home-project>${icon('folder-open')} ${esc(name)} ${icon('chevron-down')}</button></div>`;
+  if(state.workMode!=='campus') {const name=task.projectPath?.split(/[\\/]/).pop() || '工作区';return `<div class="welcome simple-welcome">${icon('sparkles')}<h1>今天想在 ${esc(name)} 做什么？</h1><button class="home-project-link" data-home-project>${icon('folder-open')} ${esc(name)} ${icon('chevron-down')}</button></div>`;}
+  return `<div class="welcome simple-welcome">${icon('school')}<h1>今天的校园生活，有什么需要帮助？</h1><button class="home-project-link" data-view="campus">${icon('notebook-pen')} 校园工作台 ${icon('chevron-right')}</button></div>`;
+}
+async function refreshCampus(){
+  state.campus=await api.loadCampus();
+  $('campusTaskList').innerHTML=state.campus.tasks.length?state.campus.tasks.map(task=>`<div class="campus-task"><input type="checkbox" data-campus-complete="${esc(task.id)}" ${task.completed?'checked':''} aria-label="完成事项"><span class="${task.completed?'is-done':''}">${esc(task.title)}</span>${task.dueDate?`<time>${esc(task.dueDate)}</time>`:''}</div>`).join(''):'<p class="empty">暂无待办事项</p>';
+  $('campusNoteList').innerHTML=state.campus.notes.length?state.campus.notes.map(note=>`<button type="button" class="campus-note" data-campus-note="${esc(note.id)}"><strong>${esc(note.title)}</strong><span>${esc(note.content.slice(0,120))}</span>${icon('pencil')}</button>`).join(''):'<p class="empty">暂无校园资料</p>';icons();
 }
 function messageHtml(message,final=false) {
   if(message.role==='activity')return `<details class="timeline-activity ${message.error?'activity-error':''}" data-message="${esc(message.id)}"><summary>${icon(message.status==='执行中'?'loader-circle':message.error?'circle-alert':'terminal-square')}<span>${esc(message.label)}</span>${message.status==='执行中'?'<span class="timeline-pulse"></span>':''}</summary>${message.detail?`<pre>${esc(message.detail)}</pre>`:''}</details>`;
@@ -338,6 +346,8 @@ function bind() {
     const button=e.target.closest('button'); if(!button) return;
     if(button.dataset.slash){executeSlash(button.dataset.slash);return;}
     if(button.dataset.view) showView(button.dataset.view);
+    if(button.dataset.campusTab){document.querySelectorAll('[data-campus-tab]').forEach(item=>item.classList.toggle('active',item===button));$('campusTasks').classList.toggle('hidden',button.dataset.campusTab!=='tasks');$('campusNotes').classList.toggle('hidden',button.dataset.campusTab!=='notes');}
+    if(button.dataset.campusNote){const note=state.campus.notes.find(item=>item.id===button.dataset.campusNote);$('campusNoteId').value=note.id;$('campusNoteTitle').value=note.title;$('campusNoteContent').value=note.content;$('campusNoteTitle').focus();}
     if(button.hasAttribute('data-home-project'))await chooseProject();
     if(button.dataset.homeMode || button.dataset.agentMode){if(state.run)return toast('请先停止运行再切换模式');current().mode=button.dataset.homeMode || button.dataset.agentMode;await persist();updateRunVisual();hidePopovers();$('composerInput').focus();}
     if(button.dataset.questionOption)await sendPrompt(button.dataset.questionOption);
@@ -350,7 +360,7 @@ function bind() {
     if(button.dataset.task) selectTask(button.dataset.task);
     if(button.dataset.pinRow){const task=state.tasks.find(t=>t.id===button.dataset.pinRow);task.pinned=!task.pinned;await persist(task);renderTasks();}
     if(button.dataset.archiveRow){const task=state.tasks.find(t=>t.id===button.dataset.archiveRow);if(state.run?.taskId===task.id)return toast('请先停止该会话');task.archived=!task.archived;await persist(task);if(task.id===state.currentId && task.archived){const next=state.tasks.find(t=>!t.archived && t.id!==task.id);if(next)selectTask(next.id);else newTask();}renderTasks();}
-    if(button.dataset.workspaceMode){state.workMode=button.dataset.workspaceMode;localStorage.setItem('nano-work-mode',state.workMode);$('workspaceMenu').firstChild.textContent=state.workMode==='work'?'Work':'Code';hidePopovers();}
+    if(button.dataset.workspaceMode){if(state.run)return toast('请先停止当前任务再切换模式');state.workMode=button.dataset.workspaceMode;localStorage.setItem('nano-work-mode',state.workMode);$('workspaceMenu').firstChild.textContent=state.workMode==='campus'?'校园助手':state.workMode==='work'?'Work':'Code';hidePopovers();newTask();}
     if(button.dataset.window) await api.windowControl(button.dataset.window);
     if(button.dataset.suggest) { $('composerInput').value=button.dataset.suggest; $('composerInput').focus(); }
     if(button.dataset.file) await openFile(button.dataset.file);
@@ -391,6 +401,10 @@ function bind() {
   $('renameTask').onclick=()=>{hidePopovers();$('renameInput').value=current().title;$('renameDialog').showModal();};
   $('cancelRename').onclick=()=>$('renameDialog').close();
   $('cancelPlan').onclick=()=>$('planDialog').close();
+  $('campusTaskForm').onsubmit=event=>{event.preventDefault();safely(async()=>{await api.saveCampusTask({title:$('campusTaskTitle').value,dueDate:$('campusTaskDate').value});event.target.reset();await refreshCampus();});};
+  $('campusNoteForm').onsubmit=event=>{event.preventDefault();safely(async()=>{await api.saveCampusNote({id:$('campusNoteId').value || undefined,title:$('campusNoteTitle').value,content:$('campusNoteContent').value});event.target.reset();$('campusNoteId').value='';await refreshCampus();toast('资料已保存');});};
+  $('campusCancelEdit').onclick=()=>{$('campusNoteForm').reset();$('campusNoteId').value='';};
+  $('campusTaskList').addEventListener('change',event=>safely(async()=>{const task=state.campus.tasks.find(item=>item.id===event.target.dataset.campusComplete);if(task){await api.saveCampusTask({...task,completed:event.target.checked});await refreshCampus();}}));
   $('planForm').onsubmit=event=>{event.preventDefault();safely(async()=>{const old=current().plan || [];current().plan=$('planInput').value.split('\n').map(text=>text.trim()).filter(Boolean).slice(0,30).map(text=>({text,status:old.find(step=>step.text===text)?.status || 'pending'}));await persist();$('planDialog').close();renderPlan();icons();});};
   $('renameForm').onsubmit=e=>{e.preventDefault();safely(async()=>{current().title=$('renameInput').value.trim() || '未命名会话';await persist();$('renameDialog').close();renderTasks();$('taskTitle').textContent=current().title;});};
   $('pinTask').onclick=()=>safely(async()=>{current().pinned=!current().pinned;await persist();renderTasks();hidePopovers();});
@@ -420,7 +434,7 @@ function bind() {
 async function init() {
   icons(); if(!api) { $('conversation').innerHTML='<p class="empty">请通过 npm start 启动 Nano 桌面应用。</p>';return; }
   const [tasks,config,info]=await Promise.all([api.listTasks(),api.loadSettings(),api.appInfo()]);
-  state.tasks=tasks;state.config=config;state.dataPath=info.dataPath;state.defaultProject=info.defaultProject;state.workMode=localStorage.getItem('nano-work-mode') || 'code';$('workspaceMenu').firstChild.textContent=state.workMode==='work'?'Work':'Code';$('dataPath').textContent=info.dataPath;
+  state.tasks=tasks;state.config=config;state.dataPath=info.dataPath;state.defaultProject=info.defaultProject;state.workMode=localStorage.getItem('nano-work-mode') || 'campus';$('workspaceMenu').firstChild.textContent=state.workMode==='campus'?'校园助手':state.workMode==='work'?'Work':'Code';$('dataPath').textContent=info.dataPath;
   for(const task of tasks) { task.events ||= []; task.changes ||= []; task.history ||= [];if(!task.projectPath){task.projectPath=state.defaultProject;await persist(task);} if(task.interruptedRun){task.lastStatus='cancelled';task.messages.push({id:crypto.randomUUID(),role:'assistant',content:'上次运行因应用关闭而中断。已保留对话，你可以重新发送请求继续；未完成的操作不会自动重放。',time:Date.now(),statusText:'运行已中断'});delete task.interruptedRun;await persist(task);} }
   await window.NanoModels.init({api,toast,icons,showView,onSelect:()=>renderContextUsage(),getConfig:()=>state.config});
   window.NanoSidePanel.init({api,getTask:current,toast,icons,startSideAgent:payload=>api.sideAgentRun({...payload,selection:window.NanoModels.selection()}),onSideAgentHistory:async(id,history)=>{const task=state.tasks.find(item=>item.id===id);if(task){task.sideAgentHistory=history;await persist(task);}},onSideChatUpdate:async(taskId,history)=>{const item=state.tasks.find(task=>task.id===taskId);if(item){item.sideChat=history;await persist(item);}}});

@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('nano', {
   listTasks: invoke('tasks:list'), saveTask: invoke('tasks:save'), exportTask: invoke('tasks:export'), compactTask: invoke('tasks:compact'),
   runAgent: invoke('agent:run'), cancelAgent: invoke('agent:cancel'), approve: invoke('agent:approve'),
   answerQuestion: invoke('agent:answer'),
+  loadCampus: invoke('campus:load'), saveCampusNote: invoke('campus:note'), saveCampusTask: invoke('campus:task'),
   listModels: invoke('models:list'), saveModel: invoke('models:save'), removeModel: invoke('models:remove'), discoverModels: invoke('models:discover'), selectModel: invoke('models:select'),
   setPermission: invoke('agent:permission'), suggestTitle: invoke('tasks:title'),
   steerAgent: invoke('agent:steer'), sideAgentRun:invoke('side:agent-run'),sideAgentCancel:invoke('side:agent-cancel'),sideAgentPermission:invoke('side:agent-permission'),sideAgentApprove:invoke('side:agent-approve'),sideAgentAnswer:invoke('side:agent-answer'),
